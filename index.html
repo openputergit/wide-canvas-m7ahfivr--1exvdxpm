@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Shorts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .video-container {
+            scroll-snap-type: y mandatory;
+            height: calc(100vh - 4rem);
+            overflow-y: scroll;
+        }
+        .video-item {
+            scroll-snap-align: start;
+            position: relative;
+        }
+        .hide-controls::-webkit-media-controls {
+            display: none;
+        }
+        body {
+            overscroll-behavior-y: contain;
+            touch-action: pan-y;
+        }
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: white;
+            width: 0%;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <!-- Header -->
+    <header class="fixed top-0 w-full bg-gray-900 z-50">
+        <nav class="flex justify-between items-center px-4 h-16">
+            <h1 class="text-xl font-bold">EduShorts</h1>
+            <button id="uploadBtn" class="bg-blue-600 px-4 py-2 rounded-full text-sm">
+                <i class="bi bi-plus-lg"></i> Upload
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="pt-16">
+        <!-- Category Selector -->
+        <div class="flex gap-2 p-2 overflow-x-auto bg-gray-900">
+            <button class="category-btn active whitespace-nowrap bg-blue-600 px-4 py-1 rounded-full text-sm">All</button>
+            <button class="category-btn whitespace-nowrap bg-gray-700 px-4 py-1 rounded-full text-sm">Mathematics</button>
+            <button class="category-btn whitespace-nowrap bg-gray-700 px-4 py-1 rounded-full text-sm">Science</button>
+            <button class="category-btn whitespace-nowrap bg-gray-700 px-4 py-1 rounded-full text-sm">Language</button>
+            <button class="category-btn whitespace-nowrap bg-gray-700 px-4 py-1 rounded-full text-sm">History</button>
+        </div>
+
+        <!-- Videos Container -->
+        <div class="video-container" id="videoContainer">
+            <!-- Videos will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden z-50">
+        <div class="bg-gray-900 p-6 rounded-lg mx-4 max-w-md w-full">
+            <h2 class="text-xl font-bold mb-4">Upload Video</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block mb-2">Title</label>
+                    <input type="text" class="w-full p-2 rounded bg-gray-800" required>
+                </div>
+                <div>
+                    <label class="block mb-2">Category</label>
+                    <select class="w-full p-2 rounded bg-gray-800" required>
+                        <option>Mathematics</option>
+                        <option>Science</option>
+                        <option>Language</option>
+                        <option>History</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Video File</label>
+                    <input type="file" accept="video/*" class="w-full p-2 rounded bg-gray-800" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="closeUpload" class="px-4 py-2 rounded bg-gray-700">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Sample video data
+        const videos = [
+            {
+                id: 1,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-teaching-mathematical-formulas-2810-large.mp4',
+                title: 'Mathematics Basics',
+                category: 'Mathematics',
+                likes: 1234,
+                comments: 89
+            },
+            {
+                id: 2,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-scientist-in-laboratory-watching-chemical-reaction-9764-large.mp4',
+                title: 'Chemistry Experiment',
+                category: 'Science',
+                likes: 2345,
+                comments: 156
+            },
+            // Add more sample videos as needed
+        ];
+
+        const videoContainer = document.getElementById('videoContainer');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadModal = document.getElementById('uploadModal');
+        const closeUpload = document.getElementById('closeUpload');
+        const categoryBtns = document.querySelectorAll('.category-btn');
+
+        // Load videos
+        function loadVideos(category = 'All') {
+            videoContainer.innerHTML = '';
+            const filteredVideos = category === 'All' 
+                ? videos 
+                : videos.filter(v => v.category === category);
+
+            filteredVideos.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item h-[calc(100vh-4rem)]';
+                videoItem.innerHTML = `
+                    <video src="${video.url}" class="w-full h-full object-cover hide-controls" loop>
+                    </video>
+                    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
+                        <h3 class="text-lg font-bold">${video.title}</h3>
+                        <div class="flex gap-4 mt-2">
+                            <button class="flex items-center gap-1">
+                                <i class="bi bi-heart"></i>
+                                ${video.likes}
+                            </button>
+                            <button class="flex items-center gap-1">
+                                <i class="bi bi-chat"></i>
+                                ${video.comments}
+                            </button>
+                            <button class="flex items-center gap-1">
+                                <i class="bi bi-share"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-bar"></div>
+                `;
+
+                const videoEl = videoItem.querySelector('video');
+                const progressBar = videoItem.querySelector('.progress-bar');
+
+                videoEl.addEventListener('timeupdate', () => {
+                    const progress = (videoEl.currentTime / videoEl.duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                videoEl.addEventListener('click', () => {
+                    if (videoEl.paused) {
+                        videoEl.play();
+                    } else {
+                        videoEl.pause();
+                    }
+                });
+
+                videoContainer.appendChild(videoItem);
+            });
+
+            // Play first video
+            const firstVideo = videoContainer.querySelector('video');
+            if (firstVideo) firstVideo.play();
+        }
+
+        // Initialize with all videos
+        loadVideos();
+
+        // Intersection Observer for video playback
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target;
+                if (entry.isIntersecting) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+        }, { threshold: 0.5 });
+
+        // Observe all videos
+        document.querySelectorAll('video').forEach(video => {
+            observer.observe(video);
+        });
+
+        // Modal handlers
+        uploadBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('hidden');
+            uploadModal.classList.add('flex');
+        });
+
+        closeUpload.addEventListener('click', () => {
+            uploadModal.classList.add('hidden');
+            uploadModal.classList.remove('flex');
+        });
+
+        // Category filter
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => b.classList.remove('bg-blue-600'));
+                categoryBtns.forEach(b => b.classList.add('bg-gray-700'));
+                btn.classList.remove('bg-gray-700');
+                btn.classList.add('bg-blue-600');
+                loadVideos(btn.textContent);
+            });
+        });
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Handle form submission here
+            uploadModal.classList.add('hidden');
+            uploadModal.classList.remove('flex');
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
